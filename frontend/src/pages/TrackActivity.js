@@ -2,26 +2,50 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Activity, TrendingUp, Zap, Plus, Car, Trash2 } from 'lucide-react';
 import { activityApi } from '../services/activityApi';
 
-// Hardcoded energy types - no need to fetch from backend
+// Updated ENERGY_TYPES to match backend
 const ENERGY_TYPES = [
-  { value: 'home_electricity', label: 'Home Electricity' },
-  { value: 'air_conditioning', label: 'Air Conditioning' },
-  { value: 'heating', label: 'Heating' },
-  { value: 'water_heating', label: 'Water Heating' },
-  { value: 'office_energy', label: 'Office Energy' },
-  { value: 'electronics', label: 'Electronics' },
-  { value: 'appliances', label: 'Appliances' },
-  { value: 'lighting', label: 'Lighting' },
-  { value: 'cooking', label: 'Cooking' },
-  { value: 'laundry', label: 'Laundry' }
+  { value: 'electricity', label: '⚡ Electricity' },
+  { value: 'gas', label: '🔥 Natural Gas' },
+  { value: 'lpg', label: '🔥 LPG (Cooking Gas)' },
+  { value: 'kerosene', label: '🪔 Kerosene' },
+  { value: 'solar', label: '☀️ Solar Energy' },
+  { value: 'wind', label: '💨 Wind Energy' },
+  { value: 'biogas', label: '♻️ Biogas' }
+];
+
+// Voltage levels for electricity only
+const VOLTAGE_LEVELS = [
+  { value: 'low_voltage', label: 'Household (Low Voltage)' },
+  { value: 'medium_voltage', label: 'Commercial (Medium Voltage)' },
+  { value: 'high_voltage', label: 'Industrial (High Voltage)' }
+];
+
+// Updated VEHICLE_TYPES to match backend
+const VEHICLE_TYPES = [
+  { value: 'petrol', label: '⛽ Petrol Car' },
+  { value: 'electric', label: '🔋 Electric Car' },
+  { value: 'diesel', label: '⛽ Diesel Car' },
+  { value: 'hybrid', label: '🔋⛽ Hybrid Car' },
+  { value: 'motorcycle', label: '🏍️ Motorcycle' },
+  { value: 'bus', label: '🚌 Bus' },
+  { value: 'van_diesel', label: '🚐 Diesel Van' },
+  { value: 'truck_light', label: '🚚 Light Truck' },
+  { value: 'truck_heavy', label: '🚛 Heavy Truck' }
 ];
 
 export default function TrackActivity() {
   const [category, setCategory] = useState('energy');
-  const [energySource, setEnergySource] = useState('');
-  const [usageKwh, setUsageKwh] = useState('');
+  
+  // Energy fields
+  const [energyType, setEnergyType] = useState('');
+  const [energyAmount, setEnergyAmount] = useState('');
+  const [energyUnit, setEnergyUnit] = useState('kwh');
+  const [voltageLevel, setVoltageLevel] = useState('low_voltage');
+  
+  // Transport fields
   const [vehicleType, setVehicleType] = useState('petrol');
   const [distance, setDistance] = useState('');
+  
   const [notes, setNotes] = useState('');
   
   const [summary, setSummary] = useState({
@@ -56,7 +80,6 @@ export default function TrackActivity() {
     }
   }, [filterTab]);
 
-  // Load initial data
   useEffect(() => {
     loadSummary();
     loadHistory();
@@ -76,32 +99,43 @@ export default function TrackActivity() {
           setLoading(false);
           return;
         }
+        
         activityData = {
           category: 'transport',
           vehicle_type: vehicleType,
-          distance: parseFloat(distance),
-          notes: notes || `${vehicleType.charAt(0).toUpperCase() + vehicleType.slice(1)} Journey`
+          distance_km: parseFloat(distance),
+          notes: notes || `${VEHICLE_TYPES.find(v => v.value === vehicleType)?.label} Journey`
         };
-      } else {
-        if (!energySource || !usageKwh) {
-          setError('Please select energy source and enter usage');
+        
+      } else if (category === 'energy') {
+        if (!energyType || !energyAmount) {
+          setError('Please select energy type and enter amount');
           setLoading(false);
           return;
         }
+        
         activityData = {
           category: 'energy',
-          energy_type: energySource,
-          usage_kwh: parseFloat(usageKwh),
-          notes: notes || ENERGY_TYPES.find(t => t.value === energySource)?.label
+          energy_type: energyType,
+          energy_amount: parseFloat(energyAmount),
+          energy_unit: energyUnit,
+          notes: notes || ENERGY_TYPES.find(t => t.value === energyType)?.label
         };
+        
+        // Add voltage level only for electricity
+        if (energyType === 'electricity') {
+          activityData.voltage_level = voltageLevel;
+        }
       }
 
       const response = await activityApi.createActivity(activityData);
 
       if (response.success) {
         // Reset form
-        setEnergySource('');
-        setUsageKwh('');
+        setEnergyType('');
+        setEnergyAmount('');
+        setEnergyUnit('kwh');
+        setVoltageLevel('low_voltage');
         setDistance('');
         setNotes('');
         
@@ -110,7 +144,7 @@ export default function TrackActivity() {
         await loadHistory();
         
         // Show success message
-        alert(`Activity logged! CO₂ emission: ${response.data.co2_emission.toFixed(1)} kg`);
+        alert(`Activity logged! CO₂ emission: ${response.data.emission_kg.toFixed(2)} kg`);
       }
     } catch (err) {
       setError(err.message || 'Failed to log activity');
@@ -209,14 +243,14 @@ export default function TrackActivity() {
               {category === 'energy' ? (
                 <>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Energy Source</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Energy Type</label>
                     <select
-                      value={energySource}
-                      onChange={(e) => setEnergySource(e.target.value)}
+                      value={energyType}
+                      onChange={(e) => setEnergyType(e.target.value)}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                       required
                     >
-                      <option value="">Select energy source</option>
+                      <option value="">Select energy type</option>
                       {ENERGY_TYPES.map((type) => (
                         <option key={type.value} value={type.value}>
                           {type.label}
@@ -226,13 +260,15 @@ export default function TrackActivity() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Usage (kWh)</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Energy Amount ({energyUnit.toUpperCase()})
+                    </label>
                     <input
                       type="number"
                       step="0.1"
-                      placeholder="e.g., 12"
-                      value={usageKwh}
-                      onChange={(e) => setUsageKwh(e.target.value)}
+                      placeholder="e.g., 150"
+                      value={energyAmount}
+                      onChange={(e) => setEnergyAmount(e.target.value)}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                       required
                     />
@@ -247,8 +283,11 @@ export default function TrackActivity() {
                       onChange={(e) => setVehicleType(e.target.value)}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                     >
-                      <option value="petrol">Petrol</option>
-                      <option value="electric">Electric</option>
+                      {VEHICLE_TYPES.map((type) => (
+                        <option key={type.value} value={type.value}>
+                          {type.label}
+                        </option>
+                      ))}
                     </select>
                   </div>
 
@@ -267,6 +306,41 @@ export default function TrackActivity() {
                 </>
               )}
             </div>
+
+            {/* Additional row for energy-specific fields */}
+            {category === 'energy' && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Energy Unit</label>
+                  <select
+                    value={energyUnit}
+                    onChange={(e) => setEnergyUnit(e.target.value)}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                  >
+                    <option value="kwh">kWh (Kilowatt-hour)</option>
+                    <option value="mwh">MWh (Megawatt-hour)</option>
+                  </select>
+                </div>
+
+                {/* Show voltage level only for electricity */}
+                {energyType === 'electricity' && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Voltage Level</label>
+                    <select
+                      value={voltageLevel}
+                      onChange={(e) => setVoltageLevel(e.target.value)}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                    >
+                      {VOLTAGE_LEVELS.map((level) => (
+                        <option key={level.value} value={level.value}>
+                          {level.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Notes (Optional) */}
             <div className="mb-4">
