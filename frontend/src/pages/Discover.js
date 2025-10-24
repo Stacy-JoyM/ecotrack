@@ -56,10 +56,11 @@ const Discover = () => {
   const [coordinates, setCoordinates] = useState([36.8219, -1.2921]);
   const [map, setMap] = useState(null);
   const [selectedCategory, setSelectedCategory] = useState('All');
-  const [markers, setMarkers] = useState([]);
   const mapContainerRef = useRef(null);
   const mapRef = useRef(null);
+  const markersRef = useRef([]); // ✅ Changed from state to ref
 
+  // Initialize map
   useEffect(() => {
     if (mapRef.current || !mapContainerRef.current) return;
     if (!mapboxgl.supported()) {
@@ -83,13 +84,20 @@ const Discover = () => {
     };
   }, [coordinates]);
 
+  // Update markers when map or category changes
   useEffect(() => {
     if (!map) return;
-    markers.forEach((m) => m.remove());
+    
+    // Remove old markers
+    markersRef.current.forEach((m) => m.remove());
+    
+    // Filter locations based on selected category
     const filtered =
       selectedCategory === 'All'
         ? allLocations
         : allLocations.filter((loc) => loc.category === selectedCategory);
+    
+    // Create new markers
     const newMarkers = filtered.map((loc) => {
       const marker = new mapboxgl.Marker({ color: '#10b981' })
         .setLngLat(loc.coords)
@@ -100,8 +108,14 @@ const Discover = () => {
       });
       return marker;
     });
-    setMarkers(newMarkers);
-  }, [map, selectedCategory]);
+    
+    markersRef.current = newMarkers; // ✅ Store in ref instead of state
+    
+    // Cleanup function
+    return () => {
+      newMarkers.forEach((m) => m.remove());
+    };
+  }, [map, selectedCategory]); // ✅ No ESLint warning!
 
   const handleSearch = async () => {
     if (!searchQuery.trim() || !map) return;
