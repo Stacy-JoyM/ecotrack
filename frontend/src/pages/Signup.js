@@ -39,11 +39,11 @@ const handleSubmit = async (e) => {
     console.log("Registration response:", data); // ✅ DEBUG - Check what you receive
     
     // Check if registration was successful
-    if (data.success && data.token) {
+    if (data.success && data.access_token) {
       setMessage(data.message || "Registration complete!");
       
       // Store token and user
-      localStorage.setItem('token', data.token);
+      localStorage.setItem('token', data.access_token);
       if (data.user) {
         localStorage.setItem('user', JSON.stringify(data.user));
       }
@@ -86,7 +86,7 @@ const handleSubmit = async (e) => {
         
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Username</label>
             <input
               type="text"
               name="username"

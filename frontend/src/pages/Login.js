@@ -14,8 +14,8 @@ const Login = ({onNavigateToSignup}) => {
     e.preventDefault();
     setError("");
     const data = await loginUser(loginForm);
-    if (data.token) {
-      localStorage.setItem("token", data.token);
+    if (data.access_token) {
+      localStorage.setItem("token", data.access_token);
       window.location.href = "/dashboard"; // redirect after login
     } else {
       setError("Invalid email or password");
