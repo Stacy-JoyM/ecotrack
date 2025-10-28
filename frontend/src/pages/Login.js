@@ -1,14 +1,24 @@
+import React, { useState } from "react";
+import {loginUser} from "../services/api";
+import {Leaf} from 'lucide-react';
 
-import React, { useState } from 'react';
-import { Leaf } from 'lucide-react';
+const Login = ({onNavigateToSignup}) => {
+  const [loginForm, setLoginForm] = useState({ email: "", password: "" });
+  const [error, setError] = useState("");
 
-export default function Login({ onLogin, onNavigateToSignup }) {
-  const [loginForm, setLoginForm] = useState({ email: '', password: '' });
+  const handleChange = (e) => {
+    setLoginForm({ ...loginForm, [e.target.name]: e.target.value });
+  };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (loginForm.email && loginForm.password) {
-      onLogin(loginForm);
+    setError("");
+    const data = await loginUser(loginForm);
+    if (data.access_token) {
+      localStorage.setItem("token", data.access_token);
+      window.location.href = "/dashboard"; // redirect after login
+    } else {
+      setError("Invalid email or password");
     }
   };
 
@@ -21,15 +31,22 @@ export default function Login({ onLogin, onNavigateToSignup }) {
         </div>
         <h2 className="text-xl font-semibold text-gray-700 mb-6 text-center">Welcome Back</h2>
         
+        {error && (  // ✅ Display error message
+          <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">
+            {error}
+          </div>
+        )}
+        
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
             <input
               type="email"
+              name="email"  // ✅ Added name attribute
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
               placeholder="your@email.com"
               value={loginForm.email}
-              onChange={(e) => setLoginForm({ ...loginForm, email: e.target.value })}
+              onChange={handleChange}
               required
             />
           </div>
@@ -38,10 +55,11 @@ export default function Login({ onLogin, onNavigateToSignup }) {
             <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
             <input
               type="password"
+              name="password"  // ✅ Added name attribute
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
               placeholder="••••••••"
               value={loginForm.password}
-              onChange={(e) => setLoginForm({ ...loginForm, password: e.target.value })}
+              onChange={handleChange}
               required
             />
           </div>
@@ -70,4 +88,6 @@ export default function Login({ onLogin, onNavigateToSignup }) {
       </div>
     </div>
   );
-}
+};
+
+export default Login;

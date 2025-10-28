@@ -1,326 +1,432 @@
-import React, { useState } from 'react';
-import { Plus, Activity, Edit2, Trash2, TrendingUp, Calendar, Filter } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Activity, TrendingUp, Zap, Plus, Car, Trash2 } from 'lucide-react';
+import { activityApi } from '../services/activityApi';
 
-const initialActivities = [
-  { id: 1, type: 'Car Journey', category: 'Transport', distance: '15km', carbon: 3.2, date: '2 hours ago' },
-  { id: 2, type: 'Beef meal', category: 'Food', servings: 1, carbon: 2.1, date: '5 hours ago' },
-  { id: 3, type: 'Home energy', category: 'Energy', usage: '12 kWh', carbon: 7.1, date: 'Today' },
-  { id: 4, type: 'Bus Commute', category: 'Transport', distance: '8km', carbon: 0.6, date: '2 days ago' }
+// Updated ENERGY_TYPES to match backend
+const ENERGY_TYPES = [
+  { value: 'electricity', label: '⚡ Electricity' },
+  { value: 'gas', label: '🔥 Natural Gas' },
+  { value: 'lpg', label: '🔥 LPG (Cooking Gas)' },
+  { value: 'kerosene', label: '🪔 Kerosene' },
+  { value: 'solar', label: '☀️ Solar Energy' },
+  { value: 'wind', label: '💨 Wind Energy' },
+  { value: 'biogas', label: '♻️ Biogas' }
 ];
 
-function ActivityItem({ activity, onDelete, onEdit }) {
-  return (
-    <div className="group bg-white border border-gray-200 rounded-lg hover:border-gray-300 hover:shadow-md transition-all duration-300 p-4">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-4 flex-1">
-          <div className={`p-2.5 rounded-lg border ${
-            activity.category === 'Transport' ? 'bg-blue-50 border-blue-200' :
-            activity.category === 'Food' ? 'bg-orange-50 border-orange-200' : 
-            'bg-purple-50 border-purple-200'
-          }`}>
-            <Activity className={
-              activity.category === 'Transport' ? 'text-blue-600' :
-              activity.category === 'Food' ? 'text-orange-600' : 'text-purple-600'
-            } size={18} />
-          </div>
-          <div className="flex-1">
-            <div className="font-semibold text-gray-900 mb-1">{activity.type}</div>
-            <div className="flex items-center gap-2 text-sm text-gray-500">
-              <Calendar size={12} />
-              {activity.date}
-            </div>
-          </div>
-        </div>
-        
-        <div className="flex items-center gap-4 w-full sm:w-auto">
-          <div className="flex-1 sm:flex-none">
-            <div className="text-right">
-              <div className="font-semibold text-gray-900">{activity.carbon} kg CO₂</div>
-              <div className="text-xs text-gray-500">{activity.category}</div>
-            </div>
-          </div>
-          <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-            <button 
-              onClick={() => onEdit(activity)}
-              className="p-2 hover:bg-blue-50 rounded-lg transition-all border border-transparent hover:border-blue-200"
-            >
-              <Edit2 size={14} className="text-blue-600" />
-            </button>
-            <button 
-              onClick={() => onDelete(activity.id)}
-              className="p-2 hover:bg-red-50 rounded-lg transition-all border border-transparent hover:border-red-200"
-            >
-              <Trash2 size={14} className="text-red-600" />
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
+// Voltage levels for electricity only
+const VOLTAGE_LEVELS = [
+  { value: 'low_voltage', label: 'Household (Low Voltage)' },
+  { value: 'medium_voltage', label: 'Commercial (Medium Voltage)' },
+  { value: 'high_voltage', label: 'Industrial (High Voltage)' }
+];
 
-function StatCard({ title, value, subtitle, icon: Icon, color }) {
-  return (
-    <div className="bg-white rounded-lg p-5 shadow-sm border border-gray-200 hover:shadow-md transition-all duration-300">
-      <div className="flex items-center gap-3 mb-3">
-        <div className={`p-2 rounded-lg ${color}`}>
-          <Icon size={18} className={
-            color.includes('emerald') ? 'text-emerald-600' :
-            color.includes('blue') ? 'text-blue-600' : 'text-purple-600'
-          } />
-        </div>
-        <div className="text-sm font-medium text-gray-600">{title}</div>
-      </div>
-      <div className="text-2xl font-semibold text-gray-900 mb-1">{value}</div>
-      <div className="text-xs text-gray-500">{subtitle}</div>
-    </div>
-  );
-}
+// Updated VEHICLE_TYPES to match backend
+const VEHICLE_TYPES = [
+  { value: 'petrol', label: '⛽ Petrol Car' },
+  { value: 'electric', label: '🔋 Electric Car' },
+  { value: 'diesel', label: '⛽ Diesel Car' },
+  { value: 'hybrid', label: '🔋⛽ Hybrid Car' },
+  { value: 'motorcycle', label: '🏍️ Motorcycle' },
+  { value: 'bus', label: '🚌 Bus' },
+  { value: 'van_diesel', label: '🚐 Diesel Van' },
+  { value: 'truck_light', label: '🚚 Light Truck' },
+  { value: 'truck_heavy', label: '🚛 Heavy Truck' }
+];
 
 export default function TrackActivity() {
-  const [activities, setActivities] = useState(initialActivities);
-  const [filterCategory, setFilterCategory] = useState('All');
-  const [newActivity, setNewActivity] = useState({ 
-    category: 'Transport', 
-    type: '', 
-    distance: '',
-    servings: '',
-    usage: ''
+  const [category, setCategory] = useState('energy');
+  
+  // Energy fields
+  const [energyType, setEnergyType] = useState('');
+  const [energyAmount, setEnergyAmount] = useState('');
+  const [energyUnit, setEnergyUnit] = useState('kwh');
+  const [voltageLevel, setVoltageLevel] = useState('low_voltage');
+  
+  // Transport fields
+  const [vehicleType, setVehicleType] = useState('petrol');
+  const [distance, setDistance] = useState('');
+  
+  const [notes, setNotes] = useState('');
+  
+  const [summary, setSummary] = useState({
+    total_emissions: 0,
+    activities_logged: 0,
+    average_impact: 0
   });
+  const [history, setHistory] = useState([]);
+  const [filterTab, setFilterTab] = useState('all');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  const totalCarbon = activities.reduce((sum, a) => sum + a.carbon, 0);
-  const avgCarbon = activities.length > 0 ? totalCarbon / activities.length : 0;
+  const loadSummary = useCallback(async () => {
+    try {
+      const response = await activityApi.getSummary();
+      if (response.success) {
+        setSummary(response.data);
+      }
+    } catch (err) {
+      console.error('Error loading summary:', err);
+    }
+  }, []);
 
-  const filteredActivities = filterCategory === 'All' 
-    ? activities 
-    : activities.filter(a => a.category === filterCategory);
+  const loadHistory = useCallback(async () => {
+    try {
+      const response = await activityApi.getHistory(filterTab);
+      if (response.success) {
+        setHistory(response.data);
+      }
+    } catch (err) {
+      console.error('Error loading history:', err);
+    }
+  }, [filterTab]);
 
-  const handleAddActivity = () => {
-    const value = newActivity.category === 'Transport' ? newActivity.distance :
-                  newActivity.category === 'Food' ? newActivity.servings :
-                  newActivity.usage;
-    
-    if (newActivity.type && value) {
-      const carbon = Math.random() * 5 + 0.5;
-      setActivities([{
-        id: Date.now(),
-        type: newActivity.type,
-        category: newActivity.category,
-        [newActivity.category === 'Transport' ? 'distance' : 
-         newActivity.category === 'Food' ? 'servings' : 'usage']: value,
-        carbon: parseFloat(carbon.toFixed(1)),
-        date: 'Just now'
-      }, ...activities]);
-      setNewActivity({ 
-        category: newActivity.category, 
-        type: '', 
-        distance: '',
-        servings: '',
-        usage: ''
-      });
+  useEffect(() => {
+    loadSummary();
+    loadHistory();
+  }, [loadSummary, loadHistory]);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+
+    try {
+      let activityData;
+
+      if (category === 'transport') {
+        if (!distance) {
+          setError('Please enter distance');
+          setLoading(false);
+          return;
+        }
+        
+        activityData = {
+          category: 'transport',
+          vehicle_type: vehicleType,
+          distance_km: parseFloat(distance),
+          notes: notes || `${VEHICLE_TYPES.find(v => v.value === vehicleType)?.label} Journey`
+        };
+        
+      } else if (category === 'energy') {
+        if (!energyType || !energyAmount) {
+          setError('Please select energy type and enter amount');
+          setLoading(false);
+          return;
+        }
+        
+        activityData = {
+          category: 'energy',
+          energy_type: energyType,
+          energy_amount: parseFloat(energyAmount),
+          energy_unit: energyUnit,
+          notes: notes || ENERGY_TYPES.find(t => t.value === energyType)?.label
+        };
+        
+        // Add voltage level only for electricity
+        if (energyType === 'electricity') {
+          activityData.voltage_level = voltageLevel;
+        }
+      }
+
+      const response = await activityApi.createActivity(activityData);
+
+      if (response.success) {
+        // Reset form
+        setEnergyType('');
+        setEnergyAmount('');
+        setEnergyUnit('kwh');
+        setVoltageLevel('low_voltage');
+        setDistance('');
+        setNotes('');
+        
+        // Reload data
+        await loadSummary();
+        await loadHistory();
+        
+        // Show success message
+        alert(`Activity logged! CO₂ emission: ${response.data.emission_kg.toFixed(2)} kg`);
+      }
+    } catch (err) {
+      setError(err.message || 'Failed to log activity');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleDeleteActivity = (id) => {
-    setActivities(activities.filter(a => a.id !== id));
-  };
+  const handleDelete = async (activityId) => {
+    if (!window.confirm('Are you sure you want to delete this activity?')) {
+      return;
+    }
 
-  const handleEditActivity = (activity) => {
-    console.log('Edit activity:', activity);
+    try {
+      const response = await activityApi.deleteActivity(activityId);
+      if (response.success) {
+        await loadSummary();
+        await loadHistory();
+      }
+    } catch (err) {
+      console.error('Error deleting activity:', err);
+    }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto p-4 lg:p-6">
+    <div className="min-h-screen bg-gray-50 p-4 lg:p-8">
+      <div className="max-w-6xl mx-auto">
         {/* Header */}
-        <div className="mb-6">
-          <h1 className="text-2xl lg:text-3xl font-semibold text-gray-800 mb-2">Activity Logs</h1>
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Activity Logs</h1>
           <p className="text-gray-600">Track and manage your daily activities</p>
         </div>
 
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          <StatCard 
-            title="Total Emissions"
-            value={`${totalCarbon.toFixed(1)} kg`}
-            subtitle="CO₂ tracked"
-            icon={TrendingUp}
-            color="bg-emerald-100"
-          />
-          <StatCard 
-            title="Activities Logged"
-            value={activities.length}
-            subtitle="Total entries"
-            icon={Activity}
-            color="bg-blue-100"
-          />
-          <StatCard 
-            title="Average Impact"
-            value={`${avgCarbon.toFixed(1)} kg`}
-            subtitle="Per activity"
-            icon={Filter}
-            color="bg-purple-100"
-          />
+        {/* Summary Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="p-2 bg-emerald-100 rounded-lg">
+                <TrendingUp className="text-emerald-600" size={20} />
+              </div>
+              <span className="text-gray-600 text-sm font-medium">Total Emissions</span>
+            </div>
+            <p className="text-3xl font-bold text-gray-900">{summary.total_emissions} kg</p>
+            <p className="text-sm text-gray-500 mt-1">CO₂ tracked</p>
+          </div>
+
+          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="p-2 bg-blue-100 rounded-lg">
+                <Activity className="text-blue-600" size={20} />
+              </div>
+              <span className="text-gray-600 text-sm font-medium">Activities Logged</span>
+            </div>
+            <p className="text-3xl font-bold text-gray-900">{summary.activities_logged}</p>
+            <p className="text-sm text-gray-500 mt-1">Total entries</p>
+          </div>
+
+          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="p-2 bg-purple-100 rounded-lg">
+                <Zap className="text-purple-600" size={20} />
+              </div>
+              <span className="text-gray-600 text-sm font-medium">Average Impact</span>
+            </div>
+            <p className="text-3xl font-bold text-gray-900">{summary.average_impact} kg</p>
+            <p className="text-sm text-gray-500 mt-1">Per activity</p>
+          </div>
         </div>
 
-        {/* Add Activity Form */}
-        <div className="bg-white rounded-lg p-6 shadow-sm mb-6 border border-gray-200">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">Log New Activity</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
-              <select
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all text-sm"
-                value={newActivity.category}
-                onChange={(e) => setNewActivity({ 
-                  category: e.target.value, 
-                  type: '', 
-                  distance: '',
-                  servings: '',
-                  usage: ''
-                })}
-              >
-                <option value="Transport">🚗 Transport</option>
-                <option value="Food">🍽️ Food</option>
-                <option value="Energy">⚡ Energy</option>
-              </select>
+        {/* Log New Activity Form */}
+        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 mb-8">
+          <h2 className="text-xl font-semibold text-gray-900 mb-6">Log New Activity</h2>
+          
+          {error && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">
+              {error}
             </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                {newActivity.category === 'Transport' ? 'Transport Type' :
-                 newActivity.category === 'Food' ? 'Food Item' : 'Energy Source'}
-              </label>
-              {newActivity.category === 'Transport' ? (
-                <input
-                  type="text"
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all text-sm"
-                  placeholder="e.g., Car Journey, Bus Ride"
-                  value={newActivity.type}
-                  onChange={(e) => setNewActivity({ ...newActivity, type: e.target.value })}
-                />
-              ) : newActivity.category === 'Food' ? (
+          )}
+
+          <form onSubmit={handleSubmit}>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+              {/* Category Selection */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
                 <select
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all text-sm"
-                  value={newActivity.type}
-                  onChange={(e) => setNewActivity({ ...newActivity, type: e.target.value })}
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                 >
-                  <option value="">Select food item</option>
-                  <option value="Beef meal">Beef meal</option>
-                  <option value="Chicken meal">Chicken meal</option>
-                  <option value="Pork meal">Pork meal</option>
-                  <option value="Fish meal">Fish meal</option>
-                  <option value="Vegetarian meal">Vegetarian meal</option>
-                  <option value="Vegan meal">Vegan meal</option>
-                  <option value="Dairy products">Dairy products</option>
-                  <option value="Rice dish">Rice dish</option>
-                  <option value="Pasta dish">Pasta dish</option>
-                  <option value="Fast food">Fast food</option>
+                  <option value="energy">⚡ Energy</option>
+                  <option value="transport">🚗 Transport</option>
                 </select>
+              </div>
+
+              {/* Conditional Fields Based on Category */}
+              {category === 'energy' ? (
+                <>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Energy Type</label>
+                    <select
+                      value={energyType}
+                      onChange={(e) => setEnergyType(e.target.value)}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                      required
+                    >
+                      <option value="">Select energy type</option>
+                      {ENERGY_TYPES.map((type) => (
+                        <option key={type.value} value={type.value}>
+                          {type.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Energy Amount ({energyUnit.toUpperCase()})
+                    </label>
+                    <input
+                      type="number"
+                      step="0.1"
+                      placeholder="e.g., 150"
+                      value={energyAmount}
+                      onChange={(e) => setEnergyAmount(e.target.value)}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                      required
+                    />
+                  </div>
+                </>
               ) : (
-                <select
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all text-sm"
-                  value={newActivity.type}
-                  onChange={(e) => setNewActivity({ ...newActivity, type: e.target.value })}
-                >
-                  <option value="">Select energy source</option>
-                  <option value="Home electricity">Home electricity</option>
-                  <option value="Air conditioning">Air conditioning</option>
-                  <option value="Heating">Heating</option>
-                  <option value="Water heating">Water heating</option>
-                  <option value="Office energy">Office energy</option>
-                  <option value="Electronics">Electronics</option>
-                  <option value="Appliances">Appliances</option>
-                  <option value="Lighting">Lighting</option>
-                  <option value="Cooking">Cooking</option>
-                  <option value="Laundry">Laundry</option>
-                </select>
+                <>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Vehicle Type</label>
+                    <select
+                      value={vehicleType}
+                      onChange={(e) => setVehicleType(e.target.value)}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                    >
+                      {VEHICLE_TYPES.map((type) => (
+                        <option key={type.value} value={type.value}>
+                          {type.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Distance (km)</label>
+                    <input
+                      type="number"
+                      step="0.1"
+                      placeholder="e.g., 25"
+                      value={distance}
+                      onChange={(e) => setDistance(e.target.value)}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                      required
+                    />
+                  </div>
+                </>
               )}
             </div>
-            
-            {newActivity.category === 'Transport' && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Distance (km)</label>
-                <input
-                  type="text"
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all text-sm"
-                  placeholder="e.g., 15"
-                  value={newActivity.distance}
-                  onChange={(e) => setNewActivity({ ...newActivity, distance: e.target.value })}
-                />
+
+            {/* Additional row for energy-specific fields */}
+            {category === 'energy' && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Energy Unit</label>
+                  <select
+                    value={energyUnit}
+                    onChange={(e) => setEnergyUnit(e.target.value)}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                  >
+                    <option value="kwh">kWh (Kilowatt-hour)</option>
+                    <option value="mwh">MWh (Megawatt-hour)</option>
+                  </select>
+                </div>
+
+                {/* Show voltage level only for electricity */}
+                {energyType === 'electricity' && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Voltage Level</label>
+                    <select
+                      value={voltageLevel}
+                      onChange={(e) => setVoltageLevel(e.target.value)}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                    >
+                      {VOLTAGE_LEVELS.map((level) => (
+                        <option key={level.value} value={level.value}>
+                          {level.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
               </div>
             )}
 
-            {newActivity.category === 'Food' && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Servings</label>
-                <input
-                  type="text"
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all text-sm"
-                  placeholder="e.g., 1, 2"
-                  value={newActivity.servings}
-                  onChange={(e) => setNewActivity({ ...newActivity, servings: e.target.value })}
-                />
-              </div>
-            )}
+            {/* Notes (Optional) */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">Notes (Optional)</label>
+              <input
+                type="text"
+                placeholder="Add a description..."
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+              />
+            </div>
 
-            {newActivity.category === 'Energy' && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Usage (kWh)</label>
-                <input
-                  type="text"
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all text-sm"
-                  placeholder="e.g., 12"
-                  value={newActivity.usage}
-                  onChange={(e) => setNewActivity({ ...newActivity, usage: e.target.value })}
-                />
-              </div>
-            )}
-          </div>
-          <button
-            onClick={handleAddActivity}
-            className="bg-emerald-600 text-white px-6 py-2.5 rounded-lg font-medium hover:bg-emerald-700 transition-all flex items-center gap-2 text-sm"
-          >
-            <Plus size={18} />
-            Add Activity
-          </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="flex items-center gap-2 bg-emerald-600 text-white px-6 py-3 rounded-lg hover:bg-emerald-700 transition disabled:opacity-50 disabled:cursor-not-allowed font-semibold"
+            >
+              <Plus size={20} />
+              {loading ? 'Adding...' : 'Add Activity'}
+            </button>
+          </form>
         </div>
 
-        {/* Activity List */}
-        <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">Activity History</h3>
-          <div className="flex flex-wrap gap-2 mb-4">
-            {['All', 'Transport', 'Food', 'Energy'].map(category => (
+        {/* Activity History */}
+        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+          <h2 className="text-xl font-semibold text-gray-900 mb-6">Activity History</h2>
+
+          {/* Filter Tabs */}
+          <div className="flex gap-2 mb-6">
+            {['all', 'transport', 'energy'].map((filter) => (
               <button
-                key={category}
-                onClick={() => setFilterCategory(category)}
-                className={`px-4 py-2 rounded-lg font-medium transition-all text-sm ${
-                  filterCategory === category
+                key={filter}
+                onClick={() => setFilterTab(filter)}
+                className={`px-4 py-2 rounded-lg font-medium capitalize transition ${
+                  filterTab === filter
                     ? 'bg-emerald-600 text-white'
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
               >
-                {category}
+                {filter}
               </button>
             ))}
           </div>
+
+          {/* History List */}
           <div className="space-y-3">
-            {filteredActivities.length === 0 ? (
-              <div className="text-center py-12">
-                <div className="inline-block p-4 bg-gray-100 rounded-full mb-3">
-                  <Activity className="text-gray-400" size={40} />
-                </div>
-                <p className="text-lg font-semibold text-gray-900 mb-1">No activities found</p>
-                <p className="text-gray-600 text-sm">Start tracking your carbon footprint by adding activities above</p>
-              </div>
+            {history.length === 0 ? (
+              <p className="text-center text-gray-500 py-8">No activities logged yet</p>
             ) : (
-              filteredActivities.map(activity => (
-                <ActivityItem 
-                  key={activity.id} 
-                  activity={activity} 
-                  onDelete={handleDeleteActivity}
-                  onEdit={handleEditActivity}
-                />
+              history.map((activity) => (
+                <div
+                  key={activity.id}
+                  className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className={`p-2 rounded-lg ${
+                      activity.category_lowercase === 'transport' 
+                        ? 'bg-blue-100' 
+                        : 'bg-purple-100'
+                    }`}>
+                      {activity.category_lowercase === 'transport' ? (
+                        <Car className="text-blue-600" size={20} />
+                      ) : (
+                        <Zap className="text-purple-600" size={20} />
+                      )}
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-gray-900">{activity.title}</h3>
+                      <p className="text-sm text-gray-500">{activity.time}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <div className="text-right">
+                      <p className="font-semibold text-gray-900">{activity.co2} kg CO₂</p>
+                      <p className="text-xs text-gray-500">{activity.category}</p>
+                    </div>
+                    <button
+                      onClick={() => handleDelete(activity.id)}
+                      className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition"
+                      title="Delete activity"
+                    >
+                      <Trash2 size={18} />
+                    </button>
+                  </div>
+                </div>
               ))
             )}
           </div>
