@@ -5,7 +5,6 @@ import { Send, Bot, User as UserIcon, Loader2, Sparkles } from 'lucide-react';
 const api = {
   sendMessage: async (message) => {
     try {
-      // ✅ CHANGED: Better user extraction
       const userStr = localStorage.getItem('user');
       const user = userStr ? JSON.parse(userStr) : null;
       const userId = user?.id || user?.email || 'guest';
@@ -18,7 +17,6 @@ const api = {
         headers: {
           'Content-Type': 'application/json',
         },
-        // ✅ CHANGED: Correct body format
         body: JSON.stringify({
           user_id: userId,
           message: message
@@ -132,9 +130,11 @@ const AIAssistant = () => {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50">
+    // ✅ Fixed: Use calc() to account for navbar height, position fixed to fill remaining viewport
+    <div className="fixed left-0 right-0 flex flex-col bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50" 
+         style={{ top: '73px', bottom: '0' }}>
       {/* Enhanced Header with Gradient */}
-      <div className="bg-gradient-to-r from-emerald-600 to-teal-600 shadow-lg p-6">
+      <div className="bg-gradient-to-r from-emerald-600 to-teal-600 shadow-lg p-6 flex-shrink-0">
         <div className="flex items-center gap-4">
           <div className="relative">
             <div className="w-14 h-14 bg-white rounded-full flex items-center justify-center shadow-lg">
@@ -152,7 +152,7 @@ const AIAssistant = () => {
         </div>
       </div>
 
-      {/* Messages Container with Enhanced Styling */}
+      {/* Messages Container with Enhanced Styling - flex-1 allows it to grow and become scrollable */}
       <div className="flex-1 overflow-y-auto p-6 space-y-4">
         {messages.map((message, index) => (
           <div
@@ -228,8 +228,8 @@ const AIAssistant = () => {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Enhanced Input Area */}
-      <div className="bg-white border-t border-gray-200 p-6 shadow-lg">
+      {/* Enhanced Input Area - flex-shrink-0 prevents it from shrinking */}
+      <div className="bg-white border-t border-gray-200 p-6 shadow-lg flex-shrink-0">
         <form onSubmit={handleSendMessage} className="flex gap-3">
           <div className="flex-1 relative">
             <input
