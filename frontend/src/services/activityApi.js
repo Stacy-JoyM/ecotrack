@@ -1,77 +1,72 @@
-// services/activityApi.js
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
-
-const getAuthHeaders = () => ({
-  'Content-Type': 'application/json',
-  'Authorization': `Bearer ${localStorage.getItem('token')}`
-});
+const API_BASE_URL = 'http://localhost:5000/api/activity'; // ✅ Update to match your backend URL
 
 export const activityApi = {
-  // Create activity (handles both transport and energy)
+  // Create a new activity
   createActivity: async (activityData) => {
-    const response = await fetch(`${API_BASE_URL}/activities`, {
-      method: 'POST',
-      headers: getAuthHeaders(),
-      body: JSON.stringify(activityData)
-    });
-    
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Failed to create activity');
+    try {
+      const res = await fetch(`${API_BASE_URL}/activities`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(activityData),
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || 'Failed to create activity');
+      }
+
+      const data = await res.json();
+      return { success: true, data };
+    } catch (err) {
+      console.error('Error creating activity:', err);
+      return { success: false, message: err.message };
     }
-    
-    return response.json();
   },
 
-  // Get summary for top cards
+  // Get summary
   getSummary: async () => {
-    const response = await fetch(`${API_BASE_URL}/activities/summary`, {
-      headers: getAuthHeaders()
-    });
-    
-    if (!response.ok) {
-      throw new Error('Failed to fetch summary');
+    try {
+      const res = await fetch(`${API_BASE_URL}/activities/summary`);
+      if (!res.ok) throw new Error('Failed to fetch summary');
+
+      const data = await res.json();
+      return { success: true, data };
+    } catch (err) {
+      console.error('Error fetching summary:', err);
+      return { success: false, message: err.message };
     }
-    
-    return response.json();
   },
 
-  // Get activity history
-  getHistory: async (filter = 'all') => {
-    const response = await fetch(
-      `${API_BASE_URL}/activities/history?filter=${filter}`,
-      { headers: getAuthHeaders() }
-    );
-    
-    if (!response.ok) {
-      throw new Error('Failed to fetch history');
+  // Get activity history (with optional filter)
+  getHistory: async (filter) => {
+    try {
+      const url =
+        filter && filter !== 'all'
+          ? `${API_BASE_URL}/activities?category=${filter}`
+          : `${API_BASE_URL}/activities`;
+
+      const res = await fetch(url);
+      if (!res.ok) throw new Error('Failed to fetch history');
+
+      const data = await res.json();
+      return { success: true, data };
+    } catch (err) {
+      console.error('Error fetching history:', err);
+      return { success: false, message: err.message };
     }
-    
-    return response.json();
   },
 
-  // Get energy types for dropdown (no auth needed)
-  getEnergyTypes: async () => {
-    const response = await fetch(`${API_BASE_URL}/activities/energy-types`);
-    
-    if (!response.ok) {
-      throw new Error('Failed to fetch energy types');
-    }
-    
-    return response.json();
-  },
-
-  // Delete activity
+  // Delete an activity
   deleteActivity: async (id) => {
-    const response = await fetch(`${API_BASE_URL}/activities/${id}`, {
-      method: 'DELETE',
-      headers: getAuthHeaders()
-    });
-    
-    if (!response.ok) {
-      throw new Error('Failed to delete activity');
+    try {
+      const res = await fetch(`${API_BASE_URL}/activities/${id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Failed to delete activity');
+
+      const data = await res.json();
+      return { success: true, data };
+    } catch (err) {
+      console.error('Error deleting activity:', err);
+      return { success: false, message: err.message };
     }
-    
-    return response.json();
-  }
+  },
 };
