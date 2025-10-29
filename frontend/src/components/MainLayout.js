@@ -66,7 +66,7 @@ export default function MainLayout({ children, activePage, onNavigate, onLogout,
 
             {/* User Info & Logout */}
             <div className="flex items-center gap-4 lg:ml-4 border-t lg:border-t-0 lg:border-l border-emerald-500 pt-4 lg:pt-0 lg:pl-4 mt-4 lg:mt-0">
-              <span className="text-sm">{user?.name || 'User'}</span>
+              <span className="text-sm font-medium">{user?.name || user?.username || user?.email?.split('@')[0] || 'User'}</span>
               <button 
                 onClick={onLogout}
                 className="flex items-center gap-2 px-4 py-2 rounded hover:bg-red-600 transition"
@@ -79,8 +79,8 @@ export default function MainLayout({ children, activePage, onNavigate, onLogout,
         </div>
       </header>
 
-      {/* Main Content - Add padding to account for fixed navbar */}
-      <main className="pt-20">{children}</main>
+      {/* Main Content - Conditional padding based on page */}
+      <main className={activePage === 'discover' ? '' : 'pt-20'}>{children}</main>
     </div>
   );
 }

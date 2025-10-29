@@ -156,7 +156,7 @@ const Discover = () => {
         className="absolute inset-0 rounded-lg overflow-hidden"
         style={{ minHeight: '500px' }}
       />
-      <div className="absolute top-6 left-1/2 transform -translate-x-1/2 bg-white shadow-lg rounded-xl w-[90%] max-w-3xl p-4 flex flex-col gap-4 z-10">
+      <div className="absolute top-14 left-1/2 transform -translate-x-1/2 bg-white shadow-lg rounded-xl w-[90%] max-w-3xl p-4 flex flex-col gap-4 z-10">
         <div className="flex items-center gap-3">
           <Navigation className="text-emerald-500 w-6 h-6" />
           <h1 className="text-xl font-semibold text-gray-800">Discover Eco Places</h1>
