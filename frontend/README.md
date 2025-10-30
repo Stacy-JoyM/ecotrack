@@ -1,70 +1,96 @@
-# Getting Started with Create React App
+# 🌿 EcoTrack: Carbon Footprint Tracking and AI Guidance
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Project Status](https://img.shields.io/badge/Status-Development-orange.svg)]()
+[![Code Style: Black (Backend)](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
-## Available Scripts
+**EcoTrack** is a full-stack application designed to help users monitor, calculate, and ultimately **reduce their personal carbon footprint**. It provides intelligent tracking, detailed visualization, AI-powered recommendations, and discovery of local sustainable alternatives.
 
-In the project directory, you can run:
+---
 
-### `npm start`
+## ✨ Key Features
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+| Component | Feature | Task Codes |
+| :--- | :--- | :--- |
+| **Backend** | **Carbon Calculation Engine** | 
+| **Backend** | **AI Chatbot API** | 
+| **Frontend** | **Interactive Dashboard** | 
+| **Frontend** | **Local Alternatives Map** | 
+| **Both** | **Secure Authentication** | 
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+---
 
-### `npm test`
+## 🚀 Getting Started
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+This project is composed of two primary repositories/directories: `ecotrack-ai-backend` (Python API) and `ecotrack-ai-frontend` (Client Application). Both must be configured and running.
 
-### `npm run build`
+### Prerequisites
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+* **Python** (3.8+)
+* **[Your Database Type]** (e.g., PostgreSQL)
+* **Git**
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+### 1. Backend Setup
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+The backend handles all data processing, authentication, and core business logic.
 
-### `npm run eject`
+1.  **Navigate to the backend directory:**
+    ```bash
+    cd ecotrack-ai-backend
+    ```
+2.  **Set up the environment:**
+    ```bash
+    # Create and activate a virtual environment
+    python -m venv venv
+    source venv/bin/activate
+    
+    # Install dependencies
+    pip install -r requirements.txt
+    ```
+3.  **Configure Environment Variables:**
+    Create a `.env` file in the backend root. You must define your database connection and necessary API keys (e.g., LLM key, geocoding service key).
+   
+4.  **Run Database Migrations:**
+    ```bash
+    # Command specific to your ORM/migration tool (e.g., Alembic, Flask-Migrate)
+    python manage.py db upgrade
+    ```
+5.  **Start the Server:**
+    ```bash
+    flask run
+    ```
+    The API should be running on `http://localhost:8000`.
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+### 2. Frontend Setup
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+The frontend provides the user interface for tracking and visualizing data.
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+1.  **Navigate to the frontend directory:**
+    ```bash
+    cd ecotrack-ai-frontend
+    ```
+2.  **Install dependencies:**
+    ```bash
+    npm install
+    # OR
+    yarn install
+    ```
+3.  **Configure API Base URL:**
+    Create a `.env` file in the frontend root, pointing to your running backend.
+    
+    ```env
+    REACT_APP_API_BASE_URL=http://localhost:8000/api/v1
+    ```
+4.  **Start the Client:**
+    ```bash
+    npm start
+    # OR
+    yarn start
+    ```
+    The application will open in your browser, usually at `http://localhost:3000`.
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+---
 
-## Learn More
+## 🗺️ Project Structure
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
-
-### Code Splitting
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+The project maintains a clear separation of concerns between the API and the client.
