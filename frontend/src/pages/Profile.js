@@ -1,33 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { User, Lock, Trash2, Save, AlertCircle, CheckCircle, Eye, EyeOff } from 'lucide-react';
-
-// API Configuration
-const API_URL = 'http://localhost:5000/api';
-const getAuthToken = () => localStorage.getItem('token');
-
-const apiRequest = async (endpoint, options = {}) => {
-  const token = getAuthToken();
-  const headers = {
-    'Content-Type': 'application/json',
-    ...(token && { Authorization: `Bearer ${token}` }),
-    ...options.headers,
-  };
-
-  try {
-    const response = await fetch(`${API_URL}${endpoint}`, {
-      ...options,
-      headers,
-    });
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.message || 'Request failed');
-    return { success: true, data };
-  } catch (error) {
-    console.error('API Request Error:', error);
-    throw error;
-  }
-};
+import { updateProfile, changePassword, deleteAccount } from '../services/api';
+import { useNavigate } from 'react-router-dom'; // Add this import
 
 export default function Profile({ user, onUserUpdate, onLogout }) {
+  const navigate = useNavigate(); // Add this hook
   // Profile State
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -78,21 +55,16 @@ export default function Profile({ user, onUserUpdate, onLogout }) {
     setSuccessMessage('');
 
     try {
-      const result = await apiRequest('/auth/profile', {
-        method: 'PUT',
-        body: JSON.stringify({
-          name,
-          carbon_goal: parseFloat(carbonGoal),
-        }),
+      const result = await updateProfile({
+        name,
+        carbon_goal: parseFloat(carbonGoal),
       });
 
       if (result.success) {
         setSuccessMessage('Profile updated successfully!');
-        // Update user in parent component and localStorage
-        const updatedUser = { ...user, name, carbon_goal: parseFloat(carbonGoal) };
-        localStorage.setItem('user', JSON.stringify(updatedUser));
-        if (onUserUpdate) {
-          onUserUpdate(updatedUser);
+        // Update parent component with fresh user data
+        if (onUserUpdate && result.user) {
+          onUserUpdate(result.user);
         }
       }
     } catch (err) {
@@ -122,12 +94,9 @@ export default function Profile({ user, onUserUpdate, onLogout }) {
     setLoading(true);
 
     try {
-      const result = await apiRequest('/auth/change-password', {
-        method: 'PUT',
-        body: JSON.stringify({
-          current_password: currentPassword,
-          new_password: newPassword,
-        }),
+      const result = await changePassword({
+        current_password: currentPassword,
+        new_password: newPassword,
       });
 
       if (result.success) {
@@ -144,7 +113,7 @@ export default function Profile({ user, onUserUpdate, onLogout }) {
     }
   };
 
-  // Delete Account
+  // Delete Account - UPDATED WITH REDIRECT
   const handleDeleteAccount = async () => {
     setError('');
     setSuccessMessage('');
@@ -157,27 +126,37 @@ export default function Profile({ user, onUserUpdate, onLogout }) {
     setLoading(true);
 
     try {
-      const result = await apiRequest('/auth/profile', {
-        method: 'DELETE',
-        body: JSON.stringify({
-          password: deleteConfirmPassword,
-        }),
-      });
+      const result = await deleteAccount(deleteConfirmPassword);
 
       if (result.success) {
-        setSuccessMessage('Account deleted successfully. Redirecting...');
-        // Clear storage and logout
+        setSuccessMessage('Account deleted successfully. Redirecting to login...');
+        
+        // Close modal
+        setShowDeleteModal(false);
+        
+        // Wait 1.5 seconds to show success message, then redirect
         setTimeout(() => {
+          // Call onLogout callback if provided
+          if (onLogout) {
+            onLogout();
+          }
+          
+          // Clear all local data
           localStorage.removeItem('token');
           localStorage.removeItem('user');
-          if (onLogout) onLogout();
-        }, 2000);
+          
+          // Redirect to login page
+          navigate('/login', { replace: true });
+          
+          // Alternative: Force page reload to login
+          // window.location.href = '/login';
+        }, 1500);
       }
     } catch (err) {
       setError(err.message || 'Failed to delete account. Please check your password.');
-    } finally {
       setLoading(false);
     }
+    // Note: Don't set loading to false here since we're redirecting
   };
 
   return (

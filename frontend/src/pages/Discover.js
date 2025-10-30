@@ -9,32 +9,27 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 mapboxgl.accessToken = process.env.REACT_APP_MAPBOX_TOKEN;
 
 const allLocations = [
-  { id: 1, name: 'Green Grocers Market', category: 'Food', coords: [36.8219, -1.2821], distance: '0.8 km', rating: 4.8 },
-  { id: 2, name: 'Eco Cycle Center', category: 'Transport', coords: [36.811, -1.295], distance: '1.2 km', rating: 4.6 },
-  { id: 3, name: 'Electric Boda Station', category: 'Transport', coords: [36.825, -1.288], distance: '2.1 km', rating: 4.5 },
-  { id: 4, name: 'Solar Living Hub', category: 'Energy', coords: [36.835, -1.3], distance: '3.5 km', rating: 4.9 },
-  { id: 5, name: 'Green Energy Solutions', category: 'Energy', coords: [36.827, -1.278], distance: '2.9 km', rating: 4.7 },
-  { id: 6, name: 'EcoMart Plaza', category: 'Shopping', coords: [36.8225, -1.283], distance: '0.6 km', rating: 4.4 },
-  { id: 7, name: 'Sustainable Styles Boutique', category: 'Shopping', coords: [36.818, -1.285], distance: '1.1 km', rating: 4.3 },
-  { id: 8, name: 'Nairobi Recycling Hub', category: 'Recycling', coords: [36.819, -1.296], distance: '1.7 km', rating: 4.7 },
-  { id: 9, name: 'Green Waste Collectors', category: 'Recycling', coords: [36.826, -1.291], distance: '2.3 km', rating: 4.5 },
+  { id: 1, name: 'Green Grocers Market', category: 'Food', coords: [36.8219, -1.2821], rating: 4.8 },
+  { id: 2, name: 'Eco Cycle Center', category: 'Transport', coords: [36.811, -1.295], rating: 4.6 },
+  { id: 3, name: 'Electric Boda Station', category: 'Transport', coords: [36.825, -1.288], rating: 4.5 },
+  { id: 4, name: 'Solar Living Hub', category: 'Energy', coords: [36.835, -1.3], rating: 4.9 },
+  { id: 5, name: 'Green Energy Solutions', category: 'Energy', coords: [36.827, -1.278], rating: 4.7 },
+  { id: 6, name: 'EcoMart Plaza', category: 'Shopping', coords: [36.8225, -1.283], rating: 4.4 },
+  { id: 7, name: 'Sustainable Styles Boutique', category: 'Shopping', coords: [36.818, -1.285], rating: 4.3 },
+  { id: 8, name: 'Nairobi Recycling Hub', category: 'Recycling', coords: [36.819, -1.296], rating: 4.7 },
+  { id: 9, name: 'Green Waste Collectors', category: 'Recycling', coords: [36.826, -1.291], rating: 4.5 },
 ];
 
 const HeartButton = ({ locationId }) => {
   const [liked, setLiked] = useState(() => {
-    const saved = JSON.parse(localStorage.getItem("likedPlaces") || "[]");
+    const saved = JSON.parse(localStorage.getItem('likedPlaces') || '[]');
     return saved.includes(locationId);
   });
 
   const toggleLike = () => {
-    const saved = JSON.parse(localStorage.getItem("likedPlaces") || "[]");
-    let updated;
-    if (liked) {
-      updated = saved.filter((id) => id !== locationId);
-    } else {
-      updated = [...saved, locationId];
-    }
-    localStorage.setItem("likedPlaces", JSON.stringify(updated));
+    const saved = JSON.parse(localStorage.getItem('likedPlaces') || '[]');
+    const updated = liked ? saved.filter((id) => id !== locationId) : [...saved, locationId];
+    localStorage.setItem('likedPlaces', JSON.stringify(updated));
     setLiked(!liked);
   };
 
@@ -45,7 +40,7 @@ const HeartButton = ({ locationId }) => {
         toggleLike();
       }}
       className={`w-5 h-5 cursor-pointer transition ${
-        liked ? "text-red-500 fill-red-500" : "text-gray-400 hover:text-red-500"
+        liked ? 'text-red-500 fill-red-500' : 'text-gray-400 hover:text-red-500'
       }`}
     />
   );
@@ -56,74 +51,103 @@ const Discover = () => {
   const [coordinates, setCoordinates] = useState([36.8219, -1.2921]);
   const [map, setMap] = useState(null);
   const [selectedCategory, setSelectedCategory] = useState('All');
+  const [markers, setMarkers] = useState([]);
+  const [clickedMarker, setClickedMarker] = useState(null);
   const mapContainerRef = useRef(null);
   const mapRef = useRef(null);
-  const markersRef = useRef([]); // ✅ Changed from state to ref
 
-  // Initialize map
   useEffect(() => {
     if (mapRef.current || !mapContainerRef.current) return;
     if (!mapboxgl.supported()) {
       console.error('Mapbox GL not supported in this browser.');
       return;
     }
+
     const container = mapContainerRef.current;
     while (container.firstChild) container.removeChild(container.firstChild);
+
     const newMap = new mapboxgl.Map({
       container,
       style: 'mapbox://styles/mapbox/streets-v11',
       center: coordinates,
       zoom: 12,
     });
-    newMap.on('load', () => console.log('Map loaded successfully'));
+
+    newMap.on('load', () => {
+      console.log('Map loaded successfully');
+
+      newMap.on('click', async (e) => {
+        const { lng, lat } = e.lngLat;
+        try {
+          const res = await fetch(`http://127.0.0.1:5000/api/discover/reverse?lng=${lng}&lat=${lat}`);
+          const data = await res.json();
+          console.log('You clicked:', data.place_name);
+
+          if (clickedMarker) clickedMarker.remove();
+
+          const marker = new mapboxgl.Marker({ color: '#ff5722' })
+            .setLngLat([lng, lat])
+            .setPopup(new mapboxgl.Popup().setText(data.place_name))
+            .addTo(newMap);
+
+          setClickedMarker(marker);
+        } catch (err) {
+          console.error('Reverse geocoding failed:', err);
+        }
+      });
+    });
+
     mapRef.current = newMap;
     setMap(newMap);
+
     return () => {
       newMap.remove();
       mapRef.current = null;
     };
-  }, [coordinates]);
+  }, [coordinates, clickedMarker]);
 
-  // Update markers when map or category changes
   useEffect(() => {
     if (!map) return;
     
-    // Remove old markers
-    markersRef.current.forEach((m) => m.remove());
-    
-    // Filter locations based on selected category
-    const filtered =
-      selectedCategory === 'All'
-        ? allLocations
-        : allLocations.filter((loc) => loc.category === selectedCategory);
-    
-    // Create new markers
+    // Remove existing markers
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    markers.forEach((m) => m.remove());
+
+    const filtered = selectedCategory === 'All'
+      ? allLocations
+      : allLocations.filter((loc) => loc.category === selectedCategory);
+
     const newMarkers = filtered.map((loc) => {
       const marker = new mapboxgl.Marker({ color: '#10b981' })
         .setLngLat(loc.coords)
         .setPopup(new mapboxgl.Popup().setText(loc.name))
         .addTo(map);
+
       marker.getElement().addEventListener('click', () => {
         map.flyTo({ center: loc.coords, zoom: 14 });
       });
+
       return marker;
     });
+
+    setMarkers(newMarkers);
     
-    markersRef.current = newMarkers; // ✅ Store in ref instead of state
-    
-    // Cleanup function
+    // Cleanup function to remove markers when component unmounts or dependencies change
     return () => {
       newMarkers.forEach((m) => m.remove());
     };
-  }, [map, selectedCategory]); // ✅ No ESLint warning!
+    // 'markers' is intentionally excluded from dependencies to avoid infinite loop
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [map, selectedCategory]);
 
   const handleSearch = async () => {
     if (!searchQuery.trim() || !map) return;
     try {
-      const res = await fetch(`http://127.0.0.1:5000/api/geocode?place=${searchQuery}`);
-      const data = await res.json();
-      if (data?.coordinates) {
-        const coords = data.coordinates;
+      const geoRes = await fetch(`http://127.0.0.1:5000/api/discover/geocode?place=${searchQuery}`);
+      const geoData = await geoRes.json();
+
+      if (geoData?.coordinates) {
+        const coords = geoData.coordinates;
         setCoordinates(coords);
         map.flyTo({ center: coords, zoom: 13 });
         new mapboxgl.Marker({ color: '#2563eb' }).setLngLat(coords).addTo(map);
@@ -156,6 +180,7 @@ const Discover = () => {
         className="absolute inset-0 rounded-lg overflow-hidden"
         style={{ minHeight: '500px' }}
       />
+
       <div className="absolute top-14 left-1/2 transform -translate-x-1/2 bg-white shadow-lg rounded-xl w-[90%] max-w-3xl p-4 flex flex-col gap-4 z-10">
         <div className="flex items-center gap-3">
           <Navigation className="text-emerald-500 w-6 h-6" />
@@ -173,13 +198,15 @@ const Discover = () => {
               onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
             />
           </div>
+
           <button
             onClick={handleSearch}
-            className="bg-emerald-500 text-white px-4 py-2 rounded-lg hover:bg-emerald-600"
+            className="bg-emerald-500 text-white px-4 py-2 rounded-lg hover:bg-emerald-600 transition"
           >
             Search
           </button>
         </div>
+
         <div className="flex flex-wrap gap-3 justify-center">
           {categories.map((cat) => (
             <button
@@ -192,11 +219,12 @@ const Discover = () => {
               }`}
             >
               {cat.icon}
-              <span>{cat.label}</span>
+              {cat.label}
             </button>
           ))}
         </div>
       </div>
+
       <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 w-[95%] max-w-6xl overflow-x-auto flex gap-4 p-4 scrollbar-hide z-10">
         {filteredLocations.map((loc) => (
           <div
@@ -208,6 +236,7 @@ const Discover = () => {
               <h3 className="font-semibold text-gray-800">{loc.name}</h3>
               <HeartButton locationId={loc.id} />
             </div>
+
             <div className="flex items-center text-gray-500 text-sm gap-1">
               <MapPin className="w-4 h-4" />
               <span>{loc.distance}</span>
