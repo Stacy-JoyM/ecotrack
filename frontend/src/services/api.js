@@ -1,5 +1,5 @@
-// API Configuration - Use consistent base URL
-const BASE_URL = " https://ecotrack-ai-backend.onrender.com/api/user"; // Flask backend URL
+// API Configuration - Use environment variable with fallback
+const BASE_URL = "https://ecotrack-ai-backend.onrender.com/api/user"
 
 // Helper function to get auth token
 const getAuthToken = () => localStorage.getItem('token');
@@ -32,6 +32,7 @@ const apiRequest = async (endpoint, options = {}) => {
   }
 };
 
+// ==================== USER AUTHENTICATION ====================
 
 export async function registerUser(userData) {
   try {
@@ -57,7 +58,6 @@ export async function registerUser(userData) {
   }
 }
 
-
 export async function loginUser(userData) {
   try {
     const res = await fetch(`${BASE_URL}/login`, {
@@ -82,6 +82,13 @@ export async function loginUser(userData) {
   }
 }
 
+export function logoutUser() {
+  localStorage.removeItem('token');
+  localStorage.removeItem('user');
+  return { success: true, message: "Logged out successfully" };
+}
+
+// ==================== USER PROFILE ====================
 
 export async function getProfile() {
   try {
@@ -111,6 +118,37 @@ export async function getProfile() {
   }
 }
 
+export async function getCurrentUserDetails() {
+  /**
+   * Get current authenticated user with statistics
+   * This uses the /me endpoint which includes activity stats
+   */
+  try {
+    const token = getAuthToken();
+    
+    if (!token) {
+      return { success: false, message: "No authentication token found" };
+    }
+    
+    const res = await fetch(`${BASE_URL}/me`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    
+    const data = await res.json();
+    
+    // Update localStorage with fresh user data
+    if (data.success && data.user) {
+      localStorage.setItem('user', JSON.stringify(data.user));
+    }
+    
+    return data;
+  } catch (error) {
+    console.error("Get current user error:", error);
+    return { success: false, message: "Network error. Please try again." };
+  }
+}
 
 export async function updateProfile(profileData) {
   try {
@@ -131,7 +169,6 @@ export async function updateProfile(profileData) {
   }
 }
 
-
 export async function changePassword(passwordData) {
   try {
     const result = await apiRequest('/change-password', {
@@ -145,7 +182,6 @@ export async function changePassword(passwordData) {
     throw error;
   }
 }
-
 
 export async function deleteAccount(password) {
   try {
@@ -167,12 +203,51 @@ export async function deleteAccount(password) {
   }
 }
 
+// ==================== USER CRUD ====================
 
-export function logoutUser() {
-  localStorage.removeItem('token');
-  localStorage.removeItem('user');
-  return { success: true, message: "Logged out successfully" };
+export async function createUser(userData) {
+  /**
+   * Create a new user (alternative to registerUser)
+   * @param userData - {username, email, password, name, location, lifestyle_type}
+   */
+  try {
+    const res = await fetch(`${BASE_URL}/users`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(userData),
+    });
+    
+    const data = await res.json();
+    
+    // Store token if successful
+    if (data.success && data.access_token) {
+      localStorage.setItem('token', data.access_token);
+      localStorage.setItem('user', JSON.stringify(data.user));
+    }
+    
+    return data;
+  } catch (error) {
+    console.error("Create user error:", error);
+    return { success: false, message: "Network error. Please try again." };
+  }
 }
+
+export async function getUserById(userId) {
+  /**
+   * Get user by ID (public endpoint)
+   * @param userId - User ID
+   */
+  try {
+    const res = await fetch(`${BASE_URL}/users/${userId}`);
+    const data = await res.json();
+    return data;
+  } catch (error) {
+    console.error("Get user by ID error:", error);
+    return { success: false, message: "Network error. Please try again." };
+  }
+}
+
+// ==================== UTILITY FUNCTIONS ====================
 
 /**
  * Check if user is authenticated
@@ -196,4 +271,12 @@ export function getCurrentUser() {
     console.error("Error parsing user data:", error);
     return null;
   }
+}
+
+/**
+ * Get auth token
+ * @returns {string|null} Auth token or null
+ */
+export function getToken() {
+  return getAuthToken();
 }
