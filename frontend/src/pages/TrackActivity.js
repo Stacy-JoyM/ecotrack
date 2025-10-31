@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Activity, TrendingUp, Zap, Plus, Car, Trash2, AlertCircle } from 'lucide-react';
 
 // API Configuration
-const API_URL = 'http://localhost:5000/api/activity';
+const API_URL = ' https://ecotrack-ai-backend.onrender.com/api/activity';
 
 // Get auth token from localStorage
 const getAuthToken = () => localStorage.getItem('token');

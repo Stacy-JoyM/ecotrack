@@ -1,5 +1,5 @@
 // API Configuration - Use consistent base URL
-const BASE_URL = "http://127.0.0.1:5000/api/user"; // Flask backend URL
+const BASE_URL = " https://ecotrack-ai-backend.onrender.com/api/user"; // Flask backend URL
 
 // Helper function to get auth token
 const getAuthToken = () => localStorage.getItem('token');

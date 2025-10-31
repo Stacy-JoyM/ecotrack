@@ -3,7 +3,7 @@ import { TrendingDown, Activity, Zap, Target, Award, Calendar, AlertCircle } fro
 import { LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 // API Configuration
-const API_URL = 'http://localhost:5000/api/activity';
+const API_URL = ' https://ecotrack-ai-backend.onrender.com/api/activity';
 const getAuthToken = () => localStorage.getItem('token');
 
 const apiRequest = async (endpoint, options = {}) => {

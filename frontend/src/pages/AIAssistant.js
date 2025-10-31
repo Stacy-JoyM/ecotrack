@@ -9,10 +9,10 @@ const api = {
       const user = userStr ? JSON.parse(userStr) : null;
       const userId = user?.id || user?.email || 'guest';
 
-      console.log('Sending request to:', 'http://localhost:5000/api/chatbot/chat');
+      console.log('Sending request to:', ' https://ecotrack-ai-backend.onrender.com/api/chatbot/chat');
       console.log('Request body:', { user_id: userId, message: message });
 
-      const response = await fetch('http://localhost:5000/api/chatbot/chat', {
+      const response = await fetch(' https://ecotrack-ai-backend.onrender.com/api/chatbot/chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
