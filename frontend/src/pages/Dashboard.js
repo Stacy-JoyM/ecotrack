@@ -3,7 +3,7 @@ import { TrendingDown, Activity, Zap, Target, Award, Calendar, AlertCircle } fro
 import { LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 // API Configuration
-const API_URL = ' https://ecotrack-ai-backend.onrender.com/api/activity';
+const API_URL = 'http://localhost:5000/api/activity';
 const getAuthToken = () => localStorage.getItem('token');
 
 const apiRequest = async (endpoint, options = {}) => {
@@ -230,7 +230,7 @@ export default function Dashboard() {
               title="No Activities Yet"
               description="Start logging your energy usage and transport activities to see your carbon footprint analytics here."
               actionText="Log Your First Activity"
-              onAction={() => window.location.href = '/api/activity/activities'} // Adjust route as needed
+              onAction={() => window.location.href = '/track'} // Adjust route as needed
             />
           </div>
         ) : (
