@@ -1,4 +1,4 @@
-const API_BASE_URL = ' https://ecotrack-ai-backend.onrender.com/api/activity'; // ✅ Update to match your backend URL
+const API_BASE_URL = 'http://localhost:5000/api/activity'; // ✅ Update to match your backend URL
 
 export const activityApi = {
   // Create a new activity
@@ -70,3 +70,4 @@ export const activityApi = {
     }
   },
 };
+
