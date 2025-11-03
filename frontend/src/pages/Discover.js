@@ -79,7 +79,10 @@ const Discover = () => {
       newMap.on('click', async (e) => {
         const { lng, lat } = e.lngLat;
         try {
+
           const res = await fetch(`https://ecotrack-ai-backend.onrender.com/api/discover/reverse?lng=${lng}&lat=${lat}`);
+
+
           const data = await res.json();
           console.log('You clicked:', data.place_name);
 
@@ -143,7 +146,9 @@ const Discover = () => {
   const handleSearch = async () => {
     if (!searchQuery.trim() || !map) return;
     try {
+
       const geoRes = await fetch(`https://ecotrack-ai-backend.onrender.com/api/discover/geocode?place=${searchQuery}`);
+
       const geoData = await geoRes.json();
 
       if (geoData?.coordinates) {

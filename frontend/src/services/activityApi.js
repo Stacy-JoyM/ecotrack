@@ -1,6 +1,8 @@
+
 const API_BASE_URL = process.env.REACT_APP_API_URL 
   ? `${process.env.REACT_APP_API_URL}/activity`
   : 'https://ecotrack-ai-backend.onrender.com/api/activity';
+
 
 
 export const activityApi = {
@@ -73,3 +75,4 @@ export const activityApi = {
     }
   },
 };
+

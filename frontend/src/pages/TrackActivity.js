@@ -2,9 +2,11 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Activity, TrendingUp, Zap, Plus, Car, Trash2, AlertCircle } from 'lucide-react';
 
 // API Configuration
+
 const API_URL = process.env.REACT_APP_API_URL 
   ? `${process.env.REACT_APP_API_URL}/activity`
   : 'https://ecotrack-ai-backend.onrender.com/api/activity';
+
 
 // Get auth token from localStorage
 const getAuthToken = () => localStorage.getItem('token');

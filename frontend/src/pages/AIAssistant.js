@@ -1,12 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Send, Bot, User as UserIcon, Loader2, Sparkles } from 'lucide-react';
 
-// API service for chatbot
-
+// API Configuration - USE ENVIRONMENT VARIABLE
 const API_URL = process.env.REACT_APP_API_URL 
   ? `${process.env.REACT_APP_API_URL}/chatbot`
   : 'https://ecotrack-ai-backend.onrender.com/api/chatbot';
 
+console.log('🤖 AI Assistant API URL:', API_URL);
+
+// API service for chatbot
 const api = {
   sendMessage: async (message) => {
     try {
@@ -15,7 +17,8 @@ const api = {
       const userId = user?.id || user?.email || 'guest';
 
       const endpoint = `${API_URL}/chat`;
-
+      console.log('📡 Sending request to:', endpoint);
+      console.log('📝 Request body:', { user_id: userId, message: message });
 
       const response = await fetch(endpoint, {
         method: 'POST',
@@ -28,16 +31,17 @@ const api = {
         })
       });
 
-
+      console.log('📊 Response status:', response.status);
+      console.log('✅ Response ok:', response.ok);
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.log('Response text:', errorText);
+        console.log('❌ Response text:', errorText);
         
         let errorData;
         try {
           errorData = JSON.parse(errorText);
-          console.log('Parsed error:', errorData);
+          console.log('🔍 Parsed error:', errorData);
         } catch (e) {
           throw new Error(`Server error: ${response.status}`);
         }
@@ -46,11 +50,11 @@ const api = {
       }
 
       const data = await response.json();
-      console.log('Success response:', data);
+      console.log('✨ Success response:', data);
       return data.response;
 
     } catch (error) {
-      console.error('Fetch error:', error);
+      console.error('💥 Fetch error:', error);
       throw error;
     }
   }
@@ -94,11 +98,11 @@ const AIAssistant = () => {
     setIsLoading(true);
 
     try {
-      console.log('Sending message:', inputMessage);
+      console.log('💬 Sending message:', inputMessage);
       
       const botResponse = await api.sendMessage(inputMessage);
       
-      console.log('Bot response received:', botResponse);
+      console.log('🤖 Bot response received:', botResponse);
 
       const botMessage = {
         id: messages.length + 2,
@@ -110,7 +114,7 @@ const AIAssistant = () => {
       setMessages(prev => [...prev, botMessage]);
 
     } catch (error) {
-      console.error('Error sending message:', error);
+      console.error('❌ Error sending message:', error);
       
       const errorMessage = {
         id: messages.length + 2,
@@ -134,7 +138,6 @@ const AIAssistant = () => {
   };
 
   return (
-    // ✅ Fixed: Use calc() to account for navbar height, position fixed to fill remaining viewport
     <div className="fixed left-0 right-0 flex flex-col bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50" 
          style={{ top: '73px', bottom: '0' }}>
       {/* Enhanced Header with Gradient */}
@@ -156,7 +159,7 @@ const AIAssistant = () => {
         </div>
       </div>
 
-      {/* Messages Container with Enhanced Styling - flex-1 allows it to grow and become scrollable */}
+      {/* Messages Container with Enhanced Styling */}
       <div className="flex-1 overflow-y-auto p-6 space-y-4">
         {messages.map((message, index) => (
           <div
@@ -232,7 +235,7 @@ const AIAssistant = () => {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Enhanced Input Area - flex-shrink-0 prevents it from shrinking */}
+      {/* Enhanced Input Area */}
       <div className="bg-white border-t border-gray-200 p-6 shadow-lg flex-shrink-0">
         <form onSubmit={handleSendMessage} className="flex gap-3">
           <div className="flex-1 relative">
