@@ -2,7 +2,9 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Activity, TrendingUp, Zap, Plus, Car, Trash2, AlertCircle } from 'lucide-react';
 
 // API Configuration
-const API_URL = ' https://ecotrack-ai-backend.onrender.com/api/activity';
+const API_URL = process.env.REACT_APP_API_URL 
+  ? `${process.env.REACT_APP_API_URL}/activity`
+  : 'https://ecotrack-ai-backend.onrender.com/api/activity';
 
 // Get auth token from localStorage
 const getAuthToken = () => localStorage.getItem('token');
@@ -18,7 +20,10 @@ const apiRequest = async (endpoint, options = {}) => {
   };
 
   try {
-    const response = await fetch(`${API_URL}${endpoint}`, {
+    const fullUrl = `${API_URL}${endpoint}`;
+    console.log('📡 API Request:', fullUrl);
+    
+    const response = await fetch(fullUrl, {
       ...options,
       headers,
     });
@@ -31,10 +36,11 @@ const apiRequest = async (endpoint, options = {}) => {
 
     return { success: true, data };
   } catch (error) {
-    console.error('API Request Error:', error);
+    console.error('❌ API Request Error:', error);
     throw error;
   }
 };
+
 
 // Constants with proper units for Kenya
 const ENERGY_TYPES = [

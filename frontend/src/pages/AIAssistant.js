@@ -2,6 +2,11 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Send, Bot, User as UserIcon, Loader2, Sparkles } from 'lucide-react';
 
 // API service for chatbot
+
+const API_URL = process.env.REACT_APP_API_URL 
+  ? `${process.env.REACT_APP_API_URL}/chatbot`
+  : 'https://ecotrack-ai-backend.onrender.com/api/chatbot';
+
 const api = {
   sendMessage: async (message) => {
     try {
@@ -9,10 +14,10 @@ const api = {
       const user = userStr ? JSON.parse(userStr) : null;
       const userId = user?.id || user?.email || 'guest';
 
-      console.log('Sending request to:', ' https://ecotrack-ai-backend.onrender.com/api/chatbot/chat');
-      console.log('Request body:', { user_id: userId, message: message });
+      const endpoint = `${API_URL}/chat`;
 
-      const response = await fetch(' https://ecotrack-ai-backend.onrender.com/api/chatbot/chat', {
+
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -23,8 +28,7 @@ const api = {
         })
       });
 
-      console.log('Response status:', response.status);
-      console.log('Response ok:', response.ok);
+
 
       if (!response.ok) {
         const errorText = await response.text();

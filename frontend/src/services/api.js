@@ -1,5 +1,7 @@
 // API Configuration - Use environment variable with fallback
-const BASE_URL = "https://ecotrack-ai-backend.onrender.com/api/user"
+const BASE_URL = process.env.REACT_APP_API_URL 
+  ? `${process.env.REACT_APP_API_URL}/user`
+  : 'https://ecotrack-ai-backend.onrender.com/api/user';
 
 // Helper function to get auth token
 const getAuthToken = () => localStorage.getItem('token');

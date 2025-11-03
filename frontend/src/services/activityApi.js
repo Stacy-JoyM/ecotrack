@@ -1,4 +1,7 @@
-const API_BASE_URL = ' https://ecotrack-ai-backend.onrender.com/api/activity'; // ✅ Update to match your backend URL
+const API_BASE_URL = process.env.REACT_APP_API_URL 
+  ? `${process.env.REACT_APP_API_URL}/activity`
+  : 'https://ecotrack-ai-backend.onrender.com/api/activity';
+
 
 export const activityApi = {
   // Create a new activity
